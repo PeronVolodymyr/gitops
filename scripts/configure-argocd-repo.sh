@@ -4,13 +4,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=env.sh
 source "${SCRIPT_DIR}/env.sh"
 
-if [[ -z "${GITOPS_REPO_URL}" ]]; then
-  echo "GITOPS_REPO_URL is required (HTTPS or SSH remote of this gitops repo)" >&2
-  exit 1
-fi
+# Must match spec.source.repoURL in argocd/applications/*.yaml
+GITOPS_REPO_URL="${GITOPS_REPO_URL:-https://github.com/PeronVolodymyr/gitops.git}"
 
 # Optional private-repo credentials — never commit these
-# GITOPS_REPO_USERNAME / GITOPS_REPO_PASSWORD  or  GITOPS_REPO_SSH_PRIVATE_KEY_FILE
 if [[ -n "${GITOPS_REPO_SSH_PRIVATE_KEY_FILE:-}" ]]; then
   kubectl -n "${ARGOCD_NAMESPACE}" create secret generic gitops-repo \
     --from-literal=type=git \
@@ -27,13 +24,9 @@ elif [[ -n "${GITOPS_REPO_USERNAME:-}" && -n "${GITOPS_REPO_PASSWORD:-}" ]]; the
     --dry-run=client -o yaml | kubectl apply -f -
   kubectl -n "${ARGOCD_NAMESPACE}" label secret gitops-repo argocd.argoproj.io/secret-type=repository --overwrite
 else
-  echo "No GITOPS_REPO_USERNAME/PASSWORD or GITOPS_REPO_SSH_PRIVATE_KEY_FILE set — assuming public repo"
+  echo "Assuming public repo at ${GITOPS_REPO_URL}"
 fi
 
-tmpdir="$(mktemp -d)"
-trap 'rm -rf "${tmpdir}"' EXIT
-for f in "${ROOT_DIR}"/argocd/applications/service-*.yaml; do
-  sed "s|GITOPS_REPO_URL_PLACEHOLDER|${GITOPS_REPO_URL}|g" "${f}" > "${tmpdir}/$(basename "${f}")"
-done
-kubectl apply -f "${tmpdir}"
-echo "Applied ArgoCD Applications pointing at ${GITOPS_REPO_URL}"
+kubectl apply -f "${ROOT_DIR}/argocd/applications/service-a.yaml"
+kubectl apply -f "${ROOT_DIR}/argocd/applications/service-b.yaml"
+echo "Applied ArgoCD Applications from ${ROOT_DIR}/argocd/applications/"

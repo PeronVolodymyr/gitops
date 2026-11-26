@@ -14,6 +14,3 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PARENT_DIR="$(cd "${ROOT_DIR}/.." && pwd)"
 SERVICE_A_DIR="${SERVICE_A_DIR:-${PARENT_DIR}/service-a}"
 SERVICE_B_DIR="${SERVICE_B_DIR:-${PARENT_DIR}/service-b}"
-
-# Remote Git URL ArgoCD should reconcile (required for make up when using GitOps path)
-GITOPS_REPO_URL="${GITOPS_REPO_URL:-}"

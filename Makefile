@@ -4,7 +4,6 @@ SCRIPTS := scripts
 .PHONY: up down cluster-up cluster-down argocd-install argocd-apps wait sync-status \
 	build-a build-b push-a push-b bump-a bump-b release-a release-b
 
-# Requires: GITOPS_REPO_URL
 # Optional private repo: GITOPS_REPO_USERNAME + GITOPS_REPO_PASSWORD
 #   or GITOPS_REPO_SSH_PRIVATE_KEY_FILE
 up: cluster-up argocd-install argocd-apps wait

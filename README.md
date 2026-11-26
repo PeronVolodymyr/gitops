@@ -25,7 +25,7 @@ See:
 - [k3d](https://k3d.io/)
 - JDK 21 (to build the Quarkus apps)
 - `make`
-- A **remote Git** remote for this repo (GitHub/GitLab) — ArgoCD reconciles from Git, not from a local path
+- Remote GitHub repo https://github.com/PeronVolodymyr/gitops — ArgoCD reconciles from Git, not from a local path
 - If the repo is private: a token or SSH key (see below) — **never commit credentials**
 
 ## Repository layout
@@ -49,19 +49,13 @@ Probes: `/q/health/live`, `/q/health/ready`.
 
 > Argo CD install must use **server-side apply** (`kubectl apply --server-side --force-conflicts ...`). Plain `kubectl apply` can fail on the ApplicationSet CRD (annotation size limit).
 
+Argo CD Application CRs in Git hardcode this repo:
 
-1. Push this repository to a remote and note the URL.
+`https://github.com/PeronVolodymyr/gitops.git`
 
-2. Export config (or copy `.env.example`):
+1. Ensure this repository is pushed to that remote (already done if you use that GitHub URL).
 
-```bash
-export GITOPS_REPO_URL=https://github.com/YOUR_ORG/gitops.git
-# private HTTPS example:
-# export GITOPS_REPO_USERNAME=oauth2
-# export GITOPS_REPO_PASSWORD=glpat-or-ghp-...
-# private SSH example:
-# export GITOPS_REPO_SSH_PRIVATE_KEY_FILE=$HOME/.ssh/id_ed25519
-```
+2. If the repo is **private**, export credentials (see `.env.example`). Public repos need nothing.
 
 3. Build and push initial immutable images, bump tags in Git, push:
 
@@ -77,6 +71,13 @@ git push
 
 ```bash
 make up
+```
+
+Manual Applications (no scripts):
+
+```bash
+kubectl apply -f argocd/applications/service-a.yaml
+kubectl apply -f argocd/applications/service-b.yaml
 ```
 
 5. Wait until both Applications are Synced/Healthy:
