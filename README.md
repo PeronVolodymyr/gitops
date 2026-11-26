@@ -70,13 +70,6 @@ git push
 make up
 ```
 
-Manual Applications (no scripts):
-
-```bash
-kubectl apply -f argocd/applications/service-a.yaml
-kubectl apply -f argocd/applications/service-b.yaml
-```
-
 4. Wait until both Applications are Synced/Healthy:
 
 ```bash
