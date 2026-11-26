@@ -2,7 +2,6 @@
 *.local
 .env
 .env.*
-!.env.example
 secrets/
 *.pem
 id_rsa*

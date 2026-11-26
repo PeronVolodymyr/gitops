@@ -26,7 +26,7 @@ See:
 - JDK 21 (to build the Quarkus apps)
 - `make`
 - Remote GitHub repo https://github.com/PeronVolodymyr/gitops — ArgoCD reconciles from Git, not from a local path
-- If the repo is private: a token or SSH key (see below) — **never commit credentials**
+- If the repo is private: register credentials with ArgoCD (see bootstrap step 2) — **never commit credentials**
 
 ## Repository layout
 
@@ -55,7 +55,16 @@ Argo CD Application CRs in Git hardcode this repo:
 
 1. Ensure this repository is pushed to that remote (already done if you use that GitHub URL).
 
-2. If the repo is **private**, export credentials (see `.env.example`). Public repos need nothing.
+2. If the repo is **private**, create an ArgoCD repository secret (skip for public):
+
+```bash
+kubectl -n argocd create secret generic gitops-repo \
+  --from-literal=type=git \
+  --from-literal=url=https://github.com/PeronVolodymyr/gitops.git \
+  --from-literal=username=YOUR_GITHUB_USER \
+  --from-literal=password=YOUR_TOKEN
+kubectl -n argocd label secret gitops-repo argocd.argoproj.io/secret-type=repository
+```
 
 3. Build and push initial immutable images, bump tags in Git, push:
 
