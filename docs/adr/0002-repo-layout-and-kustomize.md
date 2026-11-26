@@ -35,5 +35,5 @@ Application CRs live under `argocd/applications/` so the GitOps control plane is
 ## Consequences
 
 - Image build stays in app repos (or scripts that know their paths); **tag bump commits land here**
-- Private Git credentials for ArgoCD are supplied at bootstrap time and never committed
+- The gitops GitHub repo is public; ArgoCD needs no repository credentials
 - Adding a third service means a new `apps/<name>` tree plus an Application CR
