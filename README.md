@@ -80,11 +80,24 @@ make up
 
 Or stepwise: `make argocd-install && make argocd-apps && make wait`
 
-5. Verify (port-forward):
+5. Verify the apps (port-forward Service A):
 
 ```bash
 kubectl -n demo port-forward svc/service-a 8080:8080
 curl -s http://localhost:8080/api/v1/aggregate
+```
+
+6. Optional — open the Argo CD UI:
+
+```bash
+kubectl -n argocd port-forward svc/argocd-server 8081:443
+```
+
+Open https://localhost:8081 (accept the self-signed certificate). Username: `admin`. Password:
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath='{.data.password}' | base64 -d; echo
 ```
 
 ### Teardown
