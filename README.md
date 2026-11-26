@@ -54,7 +54,13 @@ Argo CD Application CRs in Git hardcode this repo:
 
 1. Ensure this repository is pushed to that remote (already done if you use that GitHub URL).
 
-2. Build and push initial immutable images, bump tags in Git, push:
+2. Create the local cluster **and registry** (required before any image push):
+
+```bash
+make cluster-up
+```
+
+3. Build and push initial immutable images, bump tags in Git, push:
 
 ```bash
 TAG=0.1.0 make release-b
@@ -64,18 +70,15 @@ git commit -m "Set initial image tags 0.1.0"
 git push
 ```
 
-3. Create cluster, install ArgoCD, register Applications:
+4. Install ArgoCD, register Applications, wait until Synced/Healthy:
 
 ```bash
 make up
 ```
 
-4. Wait until both Applications are Synced/Healthy:
+(`make up` is safe if the cluster already exists — it skips recreate, then installs ArgoCD and waits.)
 
-```bash
-make sync-status
-# or: make wait
-```
+Or stepwise: `make argocd-install && make argocd-apps && make wait`
 
 5. Verify (port-forward):
 
