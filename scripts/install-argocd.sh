@@ -5,7 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/env.sh"
 
 kubectl create namespace "${ARGOCD_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -n "${ARGOCD_NAMESPACE}" -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Client-side apply fails on the ApplicationSet CRD (annotation size limit).
+# Server-side apply avoids storing last-applied-configuration on huge CRDs.
+kubectl apply --server-side --force-conflicts -n "${ARGOCD_NAMESPACE}" \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 echo "Waiting for ArgoCD server..."
 kubectl -n "${ARGOCD_NAMESPACE}" rollout status deployment/argocd-server --timeout=180s

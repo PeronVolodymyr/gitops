@@ -47,6 +47,9 @@ Probes: `/q/health/live`, `/q/health/ready`.
 
 ## Bootstrap (clean machine)
 
+> Argo CD install must use **server-side apply** (`kubectl apply --server-side --force-conflicts ...`). Plain `kubectl apply` can fail on the ApplicationSet CRD (annotation size limit).
+
+
 1. Push this repository to a remote and note the URL.
 
 2. Export config (or copy `.env.example`):
