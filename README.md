@@ -96,10 +96,15 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 CLI check: `kubectl -n argocd get applications`
 
-6. Verify the apps (port-forward Service A):
+6. Verify the apps. In one terminal, port-forward Service A:
 
 ```bash
 kubectl -n demo port-forward svc/service-a 8080:8080
+```
+
+In another terminal:
+
+```bash
 curl -s http://localhost:8080/api/v1/aggregate
 ```
 
