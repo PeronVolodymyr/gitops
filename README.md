@@ -37,8 +37,8 @@ apps/
     base/                 # Deployment, Service, probes
     overlays/local/       # image registry + immutable tag
 argocd/applications/      # ArgoCD Application CRs (in Git)
-scripts/                  # bootstrap, tag bump, thin release orchestrator
-Makefile
+scripts/                  # bootstrap, tag bump
+Makefile                  # up/down + release orchestration
 ```
 
 Service A reaches B via Kubernetes DNS: `http://service-b:8080`  
@@ -112,7 +112,7 @@ make down
 
 Never deploy `:latest`. Promote by:
 
-1. `TAG=<new> make release-b` (or `release-a`) — delegates to the sibling app’s `scripts/build-and-push.sh` (Maven + docker push to `k3d-quarkus-registry.localhost:5001/...`), then updates overlay `newTag`
+1. `TAG=<new> make release-b` (or `release-a`) — runs the sibling app’s `scripts/build-and-push.sh` (Maven + docker push to `k3d-quarkus-registry.localhost:5001/...`), then updates overlay `newTag`
 2. Commit + push the overlay change
 3. ArgoCD syncs the new tag (no mutable retag)
 

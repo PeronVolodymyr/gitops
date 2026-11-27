@@ -2,7 +2,7 @@ SHELL := /bin/bash
 SCRIPTS := scripts
 
 .PHONY: up down cluster-up cluster-down argocd-install argocd-apps wait sync-status \
-	build-a build-b push-a push-b bump-a bump-b release-a release-b
+	build-a build-b bump-a bump-b release-a release-b
 
 up: cluster-up argocd-install argocd-apps wait
 	@echo "Bootstrap complete. Port-forward example:"
@@ -30,12 +30,14 @@ sync-status:
 	kubectl -n argocd get applications
 
 # TAG=0.1.0 make release-b
-# build-* delegates to sibling app scripts/build-and-push.sh; bump-* updates this repo's overlay.
+# build-* calls sibling app scripts/build-and-push.sh; bump-* updates this repo's overlay.
 build-a:
-	@$(SCRIPTS)/build-and-push.sh service-a "$(TAG)"
+	@if [[ -z "$(TAG)" ]]; then echo "Usage: TAG=<immutable-tag> make build-a" >&2; exit 1; fi
+	@source $(SCRIPTS)/env.sh && REGISTRY="$${REGISTRY}" "$${SERVICE_A_DIR}/scripts/build-and-push.sh" "$(TAG)"
 
 build-b:
-	@$(SCRIPTS)/build-and-push.sh service-b "$(TAG)"
+	@if [[ -z "$(TAG)" ]]; then echo "Usage: TAG=<immutable-tag> make build-b" >&2; exit 1; fi
+	@source $(SCRIPTS)/env.sh && REGISTRY="$${REGISTRY}" "$${SERVICE_B_DIR}/scripts/build-and-push.sh" "$(TAG)"
 
 bump-a:
 	@$(SCRIPTS)/bump-image-tag.sh service-a "$(TAG)"
