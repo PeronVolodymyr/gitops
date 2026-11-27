@@ -22,9 +22,8 @@ App changes and deploy changes have separate histories. ArgoCD watches this repo
 
 ### Build vs promote
 
-- **Build** (`./mvnw package`, `docker build` / `docker push`) lives in each app repo as `scripts/build-and-push.sh`.
-- **Promote** (update Kustomize `newTag`, commit, ArgoCD sync) lives in this repo (`make bump-*` / `release-*`).
-- `gitops` `make release-*` only orchestrates: invoke the sibling app’s `scripts/build-and-push.sh`, then bump the overlay tag. No build script lives in this repo.
+- **Build** (`./mvnw package`, `docker build` / `docker push`) lives only in each app repo (`scripts/build-and-push.sh`). This repo never invokes builds.
+- **Promote** (update Kustomize `newTag`, commit, ArgoCD sync) lives in this repo (`make bump-*`).
 
 ### Manifest tooling: Kustomize
 

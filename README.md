@@ -38,7 +38,7 @@ apps/
     overlays/local/       # image registry + immutable tag
 argocd/applications/      # ArgoCD Application CRs (in Git)
 scripts/                  # bootstrap, tag bump
-Makefile                  # up/down + release orchestration
+Makefile                  # up/down + tag bump
 ```
 
 Service A reaches B via Kubernetes DNS: `http://service-b:8080`  
@@ -62,34 +62,28 @@ Argo CD Application CRs in Git hardcode this repo:
 make cluster-up
 ```
 
-3. Build and push initial immutable images, bump tags in Git, push:
+3. Build and push initial immutable images from the app repos, then bump tags here and push:
 
 ```bash
-TAG=0.1.0 make release-b
-TAG=0.1.0 make release-a
+(cd ../service-b && ./scripts/build-and-push.sh 0.1.0)
+(cd ../service-a && ./scripts/build-and-push.sh 0.1.0)
+TAG=0.1.0 make bump-b bump-a
 git add apps/*/overlays/local/kustomization.yaml
 git commit -m "Set initial image tags 0.1.0"
 git push
 ```
 
-4. Install ArgoCD, register Applications, wait until Synced/Healthy:
+4. Install ArgoCD and register Applications:
 
 ```bash
 make up
 ```
 
-(`make up` is safe if the cluster already exists — it skips recreate, then installs ArgoCD and waits.)
+(`make up` is safe if the cluster already exists — it skips recreate, then installs ArgoCD.)
 
-Or stepwise: `make argocd-install && make argocd-apps && make wait`
+Or stepwise: `make argocd-install && make argocd-apps`
 
-5. Verify the apps (port-forward Service A):
-
-```bash
-kubectl -n demo port-forward svc/service-a 8080:8080
-curl -s http://localhost:8080/api/v1/aggregate
-```
-
-6. Optional — open the Argo CD UI:
+5. Open the Argo CD UI and confirm both apps are **Synced** / **Healthy**:
 
 ```bash
 kubectl -n argocd port-forward svc/argocd-server 8081:443
@@ -102,6 +96,15 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath='{.data.password}' | base64 -d; echo
 ```
 
+CLI check: `make sync-status`
+
+6. Verify the apps (port-forward Service A):
+
+```bash
+kubectl -n demo port-forward svc/service-a 8080:8080
+curl -s http://localhost:8080/api/v1/aggregate
+```
+
 ### Teardown
 
 ```bash
@@ -112,29 +115,20 @@ make down
 
 Never deploy `:latest`. Promote by:
 
-1. `TAG=<new> make release-b` (or `release-a`) — runs the sibling app’s `scripts/build-and-push.sh` (Maven + docker push to `k3d-quarkus-registry.localhost:5001/...`), then updates overlay `newTag`
-2. Commit + push the overlay change
-3. ArgoCD syncs the new tag (no mutable retag)
-
-Build from an app repo alone (no gitops checkout required for the image step):
+1. Build and push from the **app** repo
+2. Bump the overlay `newTag` in **this** repo
+3. Commit + push so ArgoCD syncs (no mutable retag)
 
 ```bash
+# from the app repo
 cd ../service-b
 ./scripts/build-and-push.sh 0.1.1
-```
 
-Then bump + push from gitops:
-
-```bash
+# from gitops
+cd ../gitops
 TAG=0.1.1 make bump-b
-git add apps/service-b/overlays/local/kustomization.yaml && git commit -m "Bump service-b image" && git push
-```
-
-Or one-shot orchestration from gitops (still runs the app repo’s build):
-
-```bash
-TAG=$(git -C ../service-b rev-parse --short HEAD) make release-b
-git add apps/service-b/overlays/local/kustomization.yaml && git commit -m "Bump service-b image" && git push
+git add apps/service-b/overlays/local/kustomization.yaml
+git commit -m "Bump service-b image" && git push
 ```
 
 ## Demonstrations (Definition of Done)
@@ -151,11 +145,11 @@ kubectl -n demo scale deploy/service-b --replicas=1
 ### Live upgrade via Git
 
 ```bash
-TAG=0.1.1 make release-b
+(cd ../service-b && ./scripts/build-and-push.sh 0.1.1)
+TAG=0.1.1 make bump-b
 git add apps/service-b/overlays/local/kustomization.yaml
 git commit -m "Release service-b 0.1.1" && git push
-# Watch ArgoCD roll the Deployment to the new immutable tag
-kubectl -n argocd get applications -w
+# Watch sync in the Argo CD UI, or: make sync-status
 ```
 
 ## Manual Kustomize check (optional, not the normal path)
