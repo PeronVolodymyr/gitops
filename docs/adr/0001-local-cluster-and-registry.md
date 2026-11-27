@@ -14,7 +14,7 @@ Use **k3d** with its **built-in local registry**.
 
 ### Why k3d
 
-- Fast create/destroy for scripted `make up` / `make down`
+- Fast create/destroy for scripted `./scripts/cluster-up.sh` / `./scripts/cluster-down.sh`
 - First-class local registry: `docker build` → `docker push <local-registry>/service-x:<immutable-tag>` → bump tag in Git → ArgoCD → cluster **pulls** the new tag
 - Closest local analogue to production GitOps image promotion without Docker Hub
 - Named explicitly in the assignment as an acceptable registry approach

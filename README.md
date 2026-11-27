@@ -26,7 +26,6 @@ See:
 - kubectl
 - [k3d](https://k3d.io/)
 - JDK 21 (to build the Quarkus apps)
-- `make`
 - Public remote GitHub repo https://github.com/PeronVolodymyr/gitops — ArgoCD reconciles from Git, not from a local path
 
 ## Repository layout
@@ -38,7 +37,6 @@ apps/
     overlays/local/       # image registry + immutable tag
 argocd/applications/      # ArgoCD Application CRs (in Git)
 scripts/                  # bootstrap, tag bump
-Makefile                  # up/down + tag bump
 ```
 
 Service A reaches B via Kubernetes DNS: `http://service-b:8080`  
@@ -48,7 +46,7 @@ Probes: `/q/health/live`, `/q/health/ready`.
 
 ## Bootstrap (clean machine)
 
-> Argo CD install must use **server-side apply** (`kubectl apply --server-side --force-conflicts ...`). Plain `kubectl apply` can fail on the ApplicationSet CRD (annotation size limit).
+> Argo CD install must use **server-side apply** (`kubectl apply --server-side --force-conflicts ...`). Plain `kubectl apply` can fail on the ApplicationSet CRD (annotation size limit). The install script already does this.
 
 Argo CD Application CRs in Git hardcode this repo:
 
@@ -59,15 +57,18 @@ Argo CD Application CRs in Git hardcode this repo:
 2. Create the local cluster **and registry** (required before any image push):
 
 ```bash
-make cluster-up
+./scripts/cluster-up.sh
 ```
+
+(`cluster-up.sh` is safe if the cluster already exists — it skips recreate.)
 
 3. Build and push initial immutable images from the app repos, then bump tags here and push:
 
 ```bash
 (cd ../service-b && ./scripts/build-and-push.sh 0.1.0)
 (cd ../service-a && ./scripts/build-and-push.sh 0.1.0)
-TAG=0.1.0 make bump-b bump-a
+./scripts/bump-image-tag.sh service-b 0.1.0
+./scripts/bump-image-tag.sh service-a 0.1.0
 git add apps/*/overlays/local/kustomization.yaml
 git commit -m "Set initial image tags 0.1.0"
 git push
@@ -76,12 +77,9 @@ git push
 4. Install ArgoCD and register Applications:
 
 ```bash
-make up
+./scripts/install-argocd.sh
+./scripts/configure-argocd-repo.sh
 ```
-
-(`make up` is safe if the cluster already exists — it skips recreate, then installs ArgoCD.)
-
-Or stepwise: `make argocd-install && make argocd-apps`
 
 5. Open the Argo CD UI and confirm both apps are **Synced** / **Healthy**:
 
@@ -96,7 +94,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath='{.data.password}' | base64 -d; echo
 ```
 
-CLI check: `make sync-status`
+CLI check: `kubectl -n argocd get applications`
 
 6. Verify the apps (port-forward Service A):
 
@@ -108,7 +106,7 @@ curl -s http://localhost:8080/api/v1/aggregate
 ### Teardown
 
 ```bash
-make down
+./scripts/cluster-down.sh
 ```
 
 ## Image build and immutable tags
@@ -126,7 +124,7 @@ cd ../service-b
 
 # from gitops
 cd ../gitops
-TAG=0.1.1 make bump-b
+./scripts/bump-image-tag.sh service-b 0.1.1
 git add apps/service-b/overlays/local/kustomization.yaml
 git commit -m "Bump service-b image" && git push
 ```
@@ -146,10 +144,10 @@ kubectl -n demo scale deploy/service-b --replicas=1
 
 ```bash
 (cd ../service-b && ./scripts/build-and-push.sh 0.1.1)
-TAG=0.1.1 make bump-b
+./scripts/bump-image-tag.sh service-b 0.1.1
 git add apps/service-b/overlays/local/kustomization.yaml
 git commit -m "Release service-b 0.1.1" && git push
-# Watch sync in the Argo CD UI, or: make sync-status
+# Watch sync in the Argo CD UI, or: kubectl -n argocd get applications
 ```
 
 ## Manual Kustomize check (optional, not the normal path)
