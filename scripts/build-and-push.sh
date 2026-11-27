@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Delegates Maven package + docker build/push to the application repository.
+# Image build ownership lives in service-a / service-b; this repo only orchestrates.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=env.sh
@@ -18,20 +20,11 @@ case "${SERVICE}" in
   *) echo "Unknown service: ${SERVICE}" >&2; exit 1 ;;
 esac
 
-if [[ ! -d "${SRC}" ]]; then
-  echo "Service directory not found: ${SRC}" >&2
+BUILD_SCRIPT="${SRC}/scripts/build-and-push.sh"
+if [[ ! -x "${BUILD_SCRIPT}" && ! -f "${BUILD_SCRIPT}" ]]; then
+  echo "Missing ${BUILD_SCRIPT} — each app repo owns package/image build." >&2
   exit 1
 fi
 
-IMAGE="${REGISTRY}/${SERVICE}:${TAG}"
-
-echo "Building ${SERVICE} (JVM) in ${SRC}"
-(
-  cd "${SRC}"
-  ./mvnw -q package -DskipTests
-  docker build -f src/main/docker/Dockerfile.jvm -t "${IMAGE}" .
-)
-
-echo "Pushing ${IMAGE}"
-docker push "${IMAGE}"
-echo "Pushed ${IMAGE}"
+echo "Delegating image build to ${SRC} (TAG=${TAG}, REGISTRY=${REGISTRY})"
+REGISTRY="${REGISTRY}" "${BUILD_SCRIPT}" "${TAG}"

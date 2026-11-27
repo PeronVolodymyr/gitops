@@ -10,6 +10,7 @@ NAMESPACE="${NAMESPACE:-demo}"
 ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 
 # Absolute paths assuming sibling layout: IdeaProjects/{gitops,service-a,service-b}
+# App repos own Maven/image build; these paths are only for release orchestration.
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PARENT_DIR="$(cd "${ROOT_DIR}/.." && pwd)"
 SERVICE_A_DIR="${SERVICE_A_DIR:-${PARENT_DIR}/service-a}"

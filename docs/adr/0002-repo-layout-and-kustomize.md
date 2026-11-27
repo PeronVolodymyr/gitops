@@ -14,11 +14,18 @@ We have two Quarkus application repositories (`service-a`, `service-b`). Deploym
 
 | Repo | Responsibility |
 |------|----------------|
-| `service-a` | Caller Quarkus source, tests, Dockerfiles |
-| `service-b` | Callee Quarkus source, tests, Dockerfiles |
-| `gitops` (this repo) | Kustomize manifests, ArgoCD Applications, bootstrap/teardown, image tag bumps |
+| `service-a` | Caller Quarkus source, tests, Dockerfile, **Maven package + image build/push** |
+| `service-b` | Callee Quarkus source, tests, Dockerfile, **Maven package + image build/push** |
+| `gitops` (this repo) | Kustomize manifests, ArgoCD Applications, bootstrap/teardown, **immutable tag bump** |
 
 App changes and deploy changes have separate histories. ArgoCD watches this repo for desired cluster state.
+
+### Build vs promote
+
+- **Build** (`./mvnw package`, `docker build` / `docker push`) lives in each app repo as `scripts/build-and-push.sh`.
+- **Promote** (update Kustomize `newTag`, commit, ArgoCD sync) lives in this repo (`make bump-*` / `release-*`).
+- `gitops` `make release-*` only orchestrates: call the sibling app’s build script, then bump the overlay tag. It does not own Maven or Dockerfile knowledge.
+- App repos do **not** use a Makefile — one script is enough; Make is reserved for gitops multi-target bootstrap.
 
 ### Manifest tooling: Kustomize
 
@@ -34,6 +41,7 @@ Application CRs live under `argocd/applications/` so the GitOps control plane is
 
 ## Consequences
 
-- Image build stays in app repos (or scripts that know their paths); **tag bump commits land here**
+- Each service can be built and pushed from its own clone without a sibling `gitops` checkout
+- Tag bump commits land here; image artifacts are produced by the app repos
 - The gitops GitHub repo is public; ArgoCD needs no repository credentials
-- Adding a third service means a new `apps/<name>` tree plus an Application CR
+- Adding a third service means a new app repo with `scripts/build-and-push.sh`, plus `apps/<name>` and an Application CR here

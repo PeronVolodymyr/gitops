@@ -30,6 +30,7 @@ sync-status:
 	kubectl -n argocd get applications
 
 # TAG=0.1.0 make release-b
+# build-* delegates to sibling app scripts/build-and-push.sh; bump-* updates this repo's overlay.
 build-a:
 	@$(SCRIPTS)/build-and-push.sh service-a "$(TAG)"
 

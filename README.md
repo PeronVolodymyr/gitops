@@ -6,10 +6,12 @@ Sibling layout (expected):
 
 ```text
 IdeaProjects/
-  service-a/   # Quarkus caller
-  service-b/   # Quarkus callee
-  gitops/      # this repo — manifests, ArgoCD, bootstrap
+  service-a/   # Quarkus caller — source, tests, scripts/build-and-push.sh
+  service-b/   # Quarkus callee — source, tests, scripts/build-and-push.sh
+  gitops/      # this repo — manifests, ArgoCD, bootstrap, tag bump
 ```
+
+Image **build/push** lives in each app repo. This repo only **bumps** the immutable tag in Kustomize and reconciles via ArgoCD.
 
 ## Design decisions
 
@@ -35,7 +37,7 @@ apps/
     base/                 # Deployment, Service, probes
     overlays/local/       # image registry + immutable tag
 argocd/applications/      # ArgoCD Application CRs (in Git)
-scripts/                  # bootstrap, build/push, tag bump
+scripts/                  # bootstrap, tag bump, thin release orchestrator
 Makefile
 ```
 
@@ -110,9 +112,25 @@ make down
 
 Never deploy `:latest`. Promote by:
 
-1. `TAG=<new> make release-b` (or `release-a`) — builds, pushes to `k3d-quarkus-registry.localhost:5001/...`, updates overlay `newTag`
+1. `TAG=<new> make release-b` (or `release-a`) — delegates to the sibling app’s `scripts/build-and-push.sh` (Maven + docker push to `k3d-quarkus-registry.localhost:5001/...`), then updates overlay `newTag`
 2. Commit + push the overlay change
 3. ArgoCD syncs the new tag (no mutable retag)
+
+Build from an app repo alone (no gitops checkout required for the image step):
+
+```bash
+cd ../service-b
+./scripts/build-and-push.sh 0.1.1
+```
+
+Then bump + push from gitops:
+
+```bash
+TAG=0.1.1 make bump-b
+git add apps/service-b/overlays/local/kustomization.yaml && git commit -m "Bump service-b image" && git push
+```
+
+Or one-shot orchestration from gitops (still runs the app repo’s build):
 
 ```bash
 TAG=$(git -C ../service-b rev-parse --short HEAD) make release-b
