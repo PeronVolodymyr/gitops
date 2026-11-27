@@ -150,16 +150,6 @@ git commit -m "Release service-b 0.1.1" && git push
 # Watch sync in the Argo CD UI, or: kubectl -n argocd get applications
 ```
 
-## Manual Kustomize check (optional, not the normal path)
-
-Normal path is Git → ArgoCD. For learning only:
-
-```bash
-kubectl create namespace demo --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -k apps/service-b/overlays/local
-kubectl apply -k apps/service-a/overlays/local
-```
-
 ## Out of scope
 
 Hosted CI/CD, Ingress, service-to-service auth.
